@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId) 
+                    && request.resource.data.keys().hasAll(['id', 'email', 'name', 'role', 'onboarded'])
+                    && request.resource.data.id == userId
+                    && request.resource.data.role in ['patient', 'doctor'];
+      allow update: if isOwner(userId) 
+                    && request.resource.data.id == userId;
+    }
+
+    // Records Collection
+    match /records/{recordId} {
+      // Patients can read their own. Doctors can read if sharing is enabled.
+      allow get, list: if isSignedIn() && (
+        resource.data.patientId == request.auth.uid || 
+        get(/databases/$(database)/documents/users/$(resource.data.patientId)).data.isSharingEnabled == true
+      );
+      
+      allow create: if isSignedIn() 
+                    && request.resource.data.patientId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['patientId', 'fileURL', 'fileName', 'type', 'createdAt'])
+                    && request.resource.data.type in ['prescription', 'report'];
+                    
+      allow delete: if isOwner(resource.data.patientId);
+    }
+  }
+}

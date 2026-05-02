@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the system (Patient or Doctor)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID" },
+        "role": { "type": "string", "enum": ["patient", "doctor"], "description": "User role" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "age": { "type": "number", "description": "Age (Patient only)" },
+        "gender": { "type": "string", "description": "Gender (Patient only)" },
+        "bloodGroup": { "type": "string", "description": "Blood group (Patient only)" },
+        "address": { "type": "string", "description": "Address" },
+        "degree": { "type": "string", "description": "Medical degree (Doctor only)" },
+        "isSharingEnabled": { "type": "boolean", "description": "Whether patient sharing is ON/OFF" },
+        "onboarded": { "type": "boolean", "description": "Whether onboarding is complete" }
+      },
+      "required": ["id", "role", "name", "email"]
+    },
+    "Record": {
+      "title": "Medical Record",
+      "description": "A medical record uploaded by a patient",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "patientId": { "type": "string" },
+        "fileURL": { "type": "string" },
+        "type": { "type": "string", "enum": ["prescription", "report"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "fileName": { "type": "string" }
+      },
+      "required": ["patientId", "fileURL", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Storage for user profile information"
+    },
+    "records/{recordId}": {
+      "schema": "Record",
+      "description": "Storage for medical record metadata"
+    }
+  }
+}
